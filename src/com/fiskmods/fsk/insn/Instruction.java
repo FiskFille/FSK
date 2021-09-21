@@ -1,8 +1,6 @@
 package com.fiskmods.fsk.insn;
 
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.function.DoubleFunction;
 
 import com.fiskmods.fsk.FskMath;
@@ -57,7 +55,7 @@ public enum Instruction
     CEIL(t -> Double.valueOf(Math.ceil(t))),
     CURVE(t -> Double.valueOf(FskMath.curve(t)));
 
-    public static final Instruction[] OP_ORDER = {POW, MUL, DIV, MOD, ADD, SUB};
+    public static final List<?>[] OP_ORDER = {Collections.singletonList(POW), Arrays.asList(MUL, DIV, MOD), Arrays.asList(ADD, SUB)};
     public static final Map<String, Instruction> FUNCTIONS;
 
     public final DoubleFunction<Double> function;

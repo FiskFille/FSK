@@ -1,17 +1,13 @@
 package com.fiskmods.fsk;
 
-import static com.fiskmods.fsk.insn.Instruction.*;
+import com.fiskmods.fsk.insn.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
 
-import com.fiskmods.fsk.insn.BracketInsnNode;
-import com.fiskmods.fsk.insn.ConstInsnNode;
-import com.fiskmods.fsk.insn.InsnNode;
-import com.fiskmods.fsk.insn.Instruction;
-import com.fiskmods.fsk.insn.VarInsnNode;
+import static com.fiskmods.fsk.insn.Instruction.*;
 
 public class Script
 {
@@ -224,26 +220,29 @@ public class Script
             }
         }
 
-        for (Instruction op : OP_ORDER)
+        for (List<?> list : OP_ORDER)
         {
-            int i;
-
-            while ((i = assembly.indexOf(op)) > -1)
+            for (int i = 0; i < assembly.size(); ++i)
             {
-                Object l = assembly.get(i - 1);
-                Object r = assembly.get(i + 1);
+                Object obj = assembly.get(i);
 
-                if (l instanceof Const && r instanceof Const)
+                if (list.contains(obj))
                 {
-                    assembly.set(i - 1, new Const(operate(op, ((Const) l).value, ((Const) r).value)));
-                }
-                else
-                {
-                    assembly.set(i - 1, (DoubleSupplier) () -> operate(op, ((DoubleSupplier) l).getAsDouble(), ((DoubleSupplier) r).getAsDouble()));
-                }
+                    Instruction op = (Instruction) obj;
+                    Object l = assembly.get(i - 1);
+                    Object r = assembly.get(i + 1);
+                    assembly.remove(i - 1);
+                    assembly.remove(i);
 
-                assembly.remove(i);
-                assembly.remove(i);
+                    if (l instanceof Const && r instanceof Const)
+                    {
+                        assembly.set(--i, new Const(operate(op, ((Const) l).value, ((Const) r).value)));
+                    }
+                    else
+                    {
+                        assembly.set(--i, (DoubleSupplier) () -> operate(op, ((DoubleSupplier) l).getAsDouble(), ((DoubleSupplier) r).getAsDouble()));
+                    }
+                }
             }
         }
 
@@ -266,10 +265,10 @@ public class Script
             return Math.pow(l, r);
         case MOD:
             return l % r;
-            //        case AND:
-            //            return l == 1 && r == 1 ? 1 : 0;
-            //        case OR:
-            //            return l == 1 || r == 1 ? 1 : 0;
+        //        case AND:
+        //            return l == 1 && r == 1 ? 1 : 0;
+        //        case OR:
+        //            return l == 1 || r == 1 ? 1 : 0;
         default:
             return 0;
         }
