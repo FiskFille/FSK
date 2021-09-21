@@ -1,9 +1,9 @@
 package com.fiskmods.fsk.insn;
 
+import com.fiskmods.fsk.FskMath;
+
 import java.util.*;
 import java.util.function.DoubleFunction;
-
-import com.fiskmods.fsk.FskMath;
 
 public enum Instruction
 {
@@ -19,6 +19,7 @@ public enum Instruction
     VAR,
     CST,
     NEG,
+    DEG,
     NUL(0),
     ONE(1),
     PI(Math.PI),

@@ -1,6 +1,6 @@
 package com.fiskmods.fsk;
 
-import static com.fiskmods.fsk.insn.Instruction.*;
+import com.fiskmods.fsk.insn.*;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -8,16 +8,12 @@ import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.fiskmods.fsk.insn.BracketInsnNode;
-import com.fiskmods.fsk.insn.ConstInsnNode;
-import com.fiskmods.fsk.insn.InsnNode;
-import com.fiskmods.fsk.insn.Instruction;
-import com.fiskmods.fsk.insn.VarInsnNode;
+import static com.fiskmods.fsk.insn.Instruction.*;
 
 public class Compiler
 {
     private static final Pattern VAR_ = Pattern.compile("^(\\{(.+?)})");
-    private static final Pattern CONST_ = Pattern.compile("^((?:\\d*\\.\\d+|\\d+)(?:deg|)).*");
+    private static final Pattern CONST_ = Pattern.compile("^((?:\\d*\\.\\d+|\\d+)(?:'|)).*");
     private static final Pattern FUNC;
 
     static
@@ -205,6 +201,15 @@ public class Compiler
                 addInstruction(AT);
                 interp = 1;
             }
+            else if (c == '\'')
+            {
+                if (lineInsn.size() > 1 && !lineInsn.getLast().isValue(-1) && lineInsn.getLast().instruction != DEG)
+                {
+                    illegalToken();
+                }
+
+                addInstruction(DEG);
+            }
             else if (c == 'e') addInstruction(E);
             else if (c == '+') addInstruction(ADD);
             else if (c == '-') addInstruction(SUB);
@@ -257,10 +262,10 @@ public class Compiler
         {
             String s1 = m.group(1);
             double d;
-            
-            if (s1.endsWith("deg"))
+
+            if (s1.endsWith("'"))
             {
-                d = Math.toRadians(Double.parseDouble(s1.substring(0, s1.length() - 3)));
+                d = Math.toRadians(Double.parseDouble(s1.substring(0, s1.length() - 1)));
             }
             else
             {

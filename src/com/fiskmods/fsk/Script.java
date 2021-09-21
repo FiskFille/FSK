@@ -132,6 +132,11 @@ public class Script
             Instruction insn = node.instruction;
 
             if (node.instruction == NEG);
+            else if (node.instruction == DEG)
+            {
+                assembly.add(MUL);
+                assembly.add(new Const(Math.toRadians(1)));
+            }
             else if (node instanceof VarInsnNode)
             {
                 Var var = vars[((VarInsnNode) node).var];
