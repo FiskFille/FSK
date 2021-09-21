@@ -1,0 +1,11 @@
+# IDEA
+/.idea/
+out/
+run/
+*.ipr
+*.iws
+*.iml
+*.xml
+
+output.txt
+test.fsk
