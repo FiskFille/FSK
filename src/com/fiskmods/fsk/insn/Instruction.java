@@ -39,18 +39,18 @@ public enum Instruction
     OR,
 
     // Functions
-    SIN(Math::sin),
-    COS(Math::cos),
-    TAN(Math::tan),
     ASIN(Math::asin),
     ACOS(Math::acos),
     ATAN(Math::atan),
     LOG(Math::log10),
     SQRT(Math::sqrt),
-    SIG(Math::signum),
+    SIGNUM(Math::signum),
     SINH(Math::sinh),
     COSH(Math::cosh),
     TANH(Math::tanh),
+    SIN(Math::sin),
+    COS(Math::cos),
+    TAN(Math::tan),
     ROUND(t -> Double.valueOf(Math.round(t))),
     FLOOR(t -> Double.valueOf(Math.floor(t))),
     CEIL(t -> Double.valueOf(Math.ceil(t))),
@@ -85,7 +85,7 @@ public enum Instruction
 
     static
     {
-        FUNCTIONS = new HashMap<>();
+        FUNCTIONS = new LinkedHashMap<>();
 
         for (Instruction insn : values())
         {
