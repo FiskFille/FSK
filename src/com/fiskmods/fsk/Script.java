@@ -32,7 +32,7 @@ public class Script
             vars[i] = new Var(varNames[i], i, 0);
         }
 
-        assemble();
+        assembleLine();
     }
 
     public Var[] getVars()
@@ -69,7 +69,7 @@ public class Script
         return this;
     }
 
-    private Script assemble()
+    private Script assembleLine()
     {
         List<InsnNode> list = instructions;
         assembledScript = () ->
@@ -82,7 +82,7 @@ public class Script
             {
                 List<InsnNode> line = list.subList(0, i);
                 list = list.subList(i + 1, list.size());
-                assemble(line);
+                assembleLine(line);
                 i = 0;
             }
         }
@@ -90,7 +90,7 @@ public class Script
         return this;
     }
 
-    private Script assemble(List<InsnNode> instructions)
+    private void assembleLine(List<InsnNode> instructions)
     {
         List<Object> assembly = new ArrayList<>();
         assembleBody(assembly, instructions);
@@ -119,19 +119,30 @@ public class Script
             };
         }
 
-        return this;
     }
 
-    private Script assembleBody(List<Object> assembly, List<InsnNode> insnList)
+    private void assembleBody(List<Object> assembly, List<InsnNode> insnList)
     {
         InsnNode prev = null;
+        boolean neg = false;
 
         for (int i = 0; i < insnList.size(); ++i)
         {
             InsnNode node = insnList.get(i);
             Instruction insn = node.instruction;
 
-            if (node.instruction == NEG);
+            if (node.instruction == NEG)
+            {
+                neg = true;
+                prev = node;
+                continue;
+            }
+            else if (node.instruction.bifunction != null)
+            {
+                assembly.add(node.instruction);
+                prev = node;
+                continue;
+            }
             else if (node.instruction == DEG)
             {
                 assembly.add(MUL);
@@ -141,7 +152,7 @@ public class Script
             {
                 Var var = vars[((VarInsnNode) node).var];
 
-                if (prev != null && prev.instruction == NEG)
+                if (neg)
                 {
                     var = var.invert();
                 }
@@ -154,7 +165,7 @@ public class Script
             }
             else if (node.instruction.value != null)
             {
-                if (prev != null && prev.instruction == NEG)
+                if (neg)
                 {
                     assembly.add(new Const(-insn.value));
                 }
@@ -165,7 +176,6 @@ public class Script
             }
             else if (node.instruction == BST && node instanceof BracketInsnNode)
             {
-                boolean neg = prev != null && prev.instruction == NEG;
                 int index = ((BracketInsnNode) node).index;
                 int end = -1;
 
@@ -185,6 +195,29 @@ public class Script
                     List<Object> subAssembly = new ArrayList<>();
                     assembleBody(subAssembly, insnList.subList(i + 1, end));
 
+                    if (prev != null && prev.instruction.bifunction != null)
+                    {
+                        Instruction bifunc = prev.instruction;
+
+                        if (subAssembly.size() == 3)
+                        {
+                            Object l = subAssembly.get(0);
+                            Object r = subAssembly.get(2);
+                            subAssembly.clear();
+
+                            if (l instanceof Const && r instanceof Const)
+                            {
+                                subAssembly.add(new Const(bifunc.bifunction.applyAsDouble(((Const) l).value, ((Const) r).value)));
+                            }
+                            else
+                            {
+                                subAssembly.add((DoubleSupplier) () -> bifunc.bifunction.applyAsDouble(((DoubleSupplier) l).getAsDouble(), ((DoubleSupplier) r).getAsDouble()));
+                            }
+
+                            assembly.remove(assembly.size() - 1);
+                        }
+                    }
+
                     if (neg)
                     {
                         assembly.add(new Const(-1));
@@ -192,6 +225,7 @@ public class Script
                     }
 
                     assembly.addAll(subAssembly);
+                    System.out.println(assembly);
                     i = end;
                 }
             }
@@ -201,27 +235,32 @@ public class Script
             }
 
             prev = node;
+            neg = false;
         }
 
         for (int i = assembly.size() - 1; i >= 0; --i)
         {
             Object obj = assembly.get(i);
-            Instruction insn;
 
-            if (obj instanceof Instruction && (insn = (Instruction) obj).function != null)
+            if (obj instanceof Instruction)
             {
-                Object next = assembly.get(i + 1);
+                Instruction insn = (Instruction) obj;
 
-                if (next instanceof Const)
+                if (insn.function != null)
                 {
-                    assembly.set(i, new Const(insn.function.apply(((Const) next).value)));
-                }
-                else
-                {
-                    assembly.set(i, (DoubleSupplier) () -> insn.function.apply(((DoubleSupplier) next).getAsDouble()));
-                }
+                    Object next = assembly.get(i + 1);
 
-                assembly.remove(i + 1);
+                    if (next instanceof Const)
+                    {
+                        assembly.set(i, new Const(insn.function.apply(((Const) next).value)));
+                    }
+                    else
+                    {
+                        assembly.set(i, (DoubleSupplier) () -> insn.function.apply(((DoubleSupplier) next).getAsDouble()));
+                    }
+
+                    assembly.remove(i + 1);
+                }
             }
         }
 
@@ -250,8 +289,6 @@ public class Script
                 }
             }
         }
-
-        return this;
     }
 
     private double operate(Instruction insn, double l, double r)

@@ -9,6 +9,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.fiskmods.fsk.insn.BracketInsnNode;
 import com.fiskmods.fsk.insn.ConstInsnNode;
@@ -21,11 +23,11 @@ public class Main
     {
         String file = readFile(new File("test.fsk"));
         Script s = Compiler.compile(file);
-        
-        byte[] bytes = toBytes(s);
-        writeFile(new File("output.txt"), bytes);
-        System.out.println(bytes.length);
-        
+
+//        byte[] bytes = toBytes(s);
+//        writeFile(new File("output.txt"), bytes);
+//        System.out.println(bytes.length);
+
         System.out.println(s.instructions);
 //        System.out.println(s.lookup);
         s.run().print();

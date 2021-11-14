@@ -18,16 +18,14 @@ public class ScriptScanner
         return this;
     }
     
-    public ScriptScanner advance()
+    public void advance()
     {
         scanIndex += scanLength;
-        return this;
     }
     
-    public ScriptScanner backtrack()
+    public void backtrack()
     {
         scanIndex -= scanLength;
-        return this;
     }
     
     public int index()

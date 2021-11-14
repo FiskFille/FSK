@@ -18,4 +18,9 @@ public class FskMath
     {
         return (curveCrests(d * 2 - 1) + 1) / 2;
     }
+
+    public static double logn(double base, double d)
+    {
+        return Math.log(d) / Math.log(base);
+    }
 }

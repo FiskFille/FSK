@@ -13,7 +13,7 @@ public class BracketInsnNode extends InsnNode
     @Override
     public boolean isValue(int dir)
     {
-        return dir == 0 || dir > 0 && instruction == Instruction.BST || dir < 0 && instruction == Instruction.BND;
+        return dir > 0 && instruction == Instruction.BST || dir < 0 && instruction == Instruction.BND;
     }
 
     @Override

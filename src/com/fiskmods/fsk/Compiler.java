@@ -4,6 +4,7 @@ import com.fiskmods.fsk.insn.*;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Stack;
 import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,8 +20,8 @@ public class Compiler
     static
     {
         StringJoiner s = new StringJoiner("|");
-        FUNCTIONS.keySet().forEach(s::add);
-        FUNC = Pattern.compile("^(" + s + ").*");
+        FUNCTION_NAMES.forEach(s::add);
+        FUNC = Pattern.compile("^(" + s + ")(?:\\W|\\d|$).*");
     }
 
     private final List<String> lookup = new LinkedList<>();
@@ -31,6 +32,8 @@ public class Compiler
     private ScriptScanner scanner;
     private int bracketIndex = -1;
     private int interp;
+
+    private final Stack<Bifunc> currBifunc = new Stack<>();
 
     private Compiler()
     {
@@ -152,6 +155,17 @@ public class Compiler
                     addInstruction(new BracketInsnNode(BND, j));
                     scanner.advance();
 
+                    if (!currBifunc.isEmpty() && j == currBifunc.peek().index)
+                    {
+                        if (currBifunc.peek().args > 1)
+                        {
+                            scanner.backtrack();
+                            incorrectArgs();
+                        }
+
+                        currBifunc.pop();
+                    }
+
                     line = line.substring(i + 1);
                     break;
                 }
@@ -170,9 +184,9 @@ public class Compiler
             String s = line.substring(i);
             int j = i;
 
-            if ((i += compileVars(s)) - j != 0) continue;
+            if ((i += compileVar(s)) - j != 0) continue;
             if ((i += compileConst(s)) - j != 0) continue;
-            if ((i += match(FUNC.matcher(s), m -> addInstruction(FUNCTIONS.get(m.group(1))))) - j != 0) continue;
+            if ((i += compileFunc(s)) - j != 0) continue;
 
             //            if ((i += compileKeyword(s, "false", ZERO)) - j != 0) continue;
             //            if ((i += compileKeyword(s, "true", ONE)) - j != 0) continue;
@@ -210,6 +224,20 @@ public class Compiler
 
                 addInstruction(DEG);
             }
+            else if (c == ',')
+            {
+                if (lineInsn.size() > 1 && !lineInsn.getLast().isValue(-1) || currBifunc.isEmpty())
+                {
+                    illegalToken();
+                }
+
+                if (--currBifunc.peek().args <= 0)
+                {
+                    incorrectArgs();
+                }
+
+                addInstruction(ARG);
+            }
             else if (c == 'e') addInstruction(E);
             else if (c == '+') addInstruction(ADD);
             else if (c == '-') addInstruction(SUB);
@@ -239,7 +267,7 @@ public class Compiler
         return 0;
     }
 
-    private int compileVars(String s) throws CompilerException
+    private int compileVar(String s) throws CompilerException
     {
         return match(VAR_.matcher(s), m ->
         {
@@ -274,7 +302,7 @@ public class Compiler
 
             if (d == 0)
             {
-                addInstruction(NUL);
+                addInstruction(ZRO);
             }
             else if (d == 1)
             {
@@ -283,6 +311,20 @@ public class Compiler
             else
             {
                 addInstruction(new ConstInsnNode(d));
+            }
+        });
+    }
+
+    private int compileFunc(String s) throws CompilerException
+    {
+        return match(FUNC.matcher(s), m ->
+        {
+            Instruction insn = FUNCTIONS.get(m.group(1));
+            addInstruction(insn);
+
+            if (insn.bifunction != null)
+            {
+                currBifunc.push(new Bifunc(insn, bracketIndex + 1, 2));
             }
         });
     }
@@ -337,6 +379,11 @@ public class Compiler
         throw new CompilerException(String.format("Illegal token '%s' at %s", scanner.currScan(), scanner.address()) + scanner.trace());
     }
 
+    private void incorrectArgs() throws CompilerException
+    {
+        throw new CompilerException(String.format("Incorrect number of arguments for function '%s' at %s: expected ", currBifunc.peek().instruction, scanner.address()) + currBifunc.peek().expectedArgs + scanner.trace());
+    }
+
     private void addInstruction(InsnNode node) throws CompilerException
     {
         if (node.instruction != VAR && lineInsn.isEmpty())
@@ -358,6 +405,10 @@ public class Compiler
                 unexpectedToken("value");
             }
         }
+        else if (node.instruction != BST && lineInsn.size() > 1 && lineInsn.getLast().instruction.bifunction != null)
+        {
+            unexpectedToken("'('");
+        }
         else if (node.instruction != SUB && node.isOperation() && !lineInsn.getLast().isValue(-1))
         {
             unexpectedToken("value");
@@ -375,5 +426,19 @@ public class Compiler
     private interface MatcherConsumer
     {
         void accept(Matcher m) throws CompilerException;
+    }
+
+    private static class Bifunc
+    {
+        private final Instruction instruction;
+        private final int index, expectedArgs;
+        private int args;
+
+        public Bifunc(Instruction instruction, int index, int args)
+        {
+            this.instruction = instruction;
+            this.index = index;
+            this.args = expectedArgs = args;
+        }
     }
 }

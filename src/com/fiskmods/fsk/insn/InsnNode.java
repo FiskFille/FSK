@@ -13,7 +13,7 @@ public class InsnNode
 
     public boolean isValue(int dir)
     {
-        return instruction.value != null || dir > 0 && instruction.function != null || dir < 0 && instruction == DEG;
+        return instruction.value != null || dir > 0 && (instruction.function != null || instruction.bifunction != null) || dir < 0 && instruction == DEG;
     }
 
     public boolean isOperation()
