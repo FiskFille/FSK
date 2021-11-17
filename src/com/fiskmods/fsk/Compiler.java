@@ -250,7 +250,19 @@ public class Compiler
             else if (c == '/') addInstruction(DIV);
             else if (c == '^') addInstruction(POW);
             else if (c == '%') addInstruction(MOD);
-            else if (c != ' ' && c != '\t' && c != '\r') throw new CompilerException(String.format("Unknown token '%s' at ", c) + scanner.fullTrace());
+            else if (c != ' ' && c != '\t' && c != '\r')
+            {
+                for (i = 0; i < s.length(); ++i)
+                {
+                    if (i + 1 >= s.length() || !s.substring(i, i + 1).matches("\\w"))
+                    {
+                        scanner.scan(i);
+                        throw new CompilerException(String.format("Unknown token '%s' at ", s.substring(0, i + 1)) + scanner.fullTrace());
+                    }
+                }
+
+                throw new CompilerException(String.format("Unknown token '%s' at ", c) + scanner.fullTrace());
+            }
 
             scanner.advance();
             ++i;
