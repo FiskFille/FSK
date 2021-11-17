@@ -1,13 +1,18 @@
 package com.fiskmods.fsk;
 
-import com.fiskmods.fsk.insn.*;
+import static com.fiskmods.fsk.insn.Instruction.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
 
-import static com.fiskmods.fsk.insn.Instruction.*;
+import com.fiskmods.fsk.insn.BracketInsnNode;
+import com.fiskmods.fsk.insn.ConstInsnNode;
+import com.fiskmods.fsk.insn.InsnFunction;
+import com.fiskmods.fsk.insn.InsnNode;
+import com.fiskmods.fsk.insn.Instruction;
+import com.fiskmods.fsk.insn.VarInsnNode;
 
 public class Script
 {
@@ -137,7 +142,7 @@ public class Script
                 prev = node;
                 continue;
             }
-            else if (node.instruction.bifunction != null)
+            else if (node.instruction.isFunction(f -> f.argNum > 1))
             {
                 assembly.add(node.instruction);
                 prev = node;
@@ -163,15 +168,15 @@ public class Script
             {
                 assembly.add(new Const(((ConstInsnNode) node).value));
             }
-            else if (node.instruction.value != null)
+            else if (node.instruction.isValue())
             {
                 if (neg)
                 {
-                    assembly.add(new Const(-insn.value));
+                    assembly.add(new Const(-insn.value()));
                 }
                 else
                 {
-                    assembly.add(new Const(insn.value));
+                    assembly.add(new Const(insn.value()));
                 }
             }
             else if (node.instruction == BST && node instanceof BracketInsnNode)
@@ -193,29 +198,50 @@ public class Script
                 if (end > -1)
                 {
                     List<Object> subAssembly = new ArrayList<>();
+                    InsnFunction f;
+
                     assembleBody(subAssembly, insnList.subList(i + 1, end));
 
-                    if (prev != null && prev.instruction.bifunction != null)
+                    if (prev != null && prev.instruction.isFunction() && (f = prev.instruction.function()).argNum > 1 && subAssembly.size() > 1 && (subAssembly.size() & 1) == 1)
                     {
-                        Instruction bifunc = prev.instruction;
+                        List<Object> args = new ArrayList<>();
+                        boolean consts = true;
 
-                        if (subAssembly.size() == 3)
+                        for (int j = 0; j < subAssembly.size(); j += 2)
                         {
-                            Object l = subAssembly.get(0);
-                            Object r = subAssembly.get(2);
-                            subAssembly.clear();
+                            Object obj = subAssembly.get(j);
 
-                            if (l instanceof Const && r instanceof Const)
+                            if (!(obj instanceof Const))
                             {
-                                subAssembly.add(new Const(bifunc.bifunction.applyAsDouble(((Const) l).value, ((Const) r).value)));
-                            }
-                            else
-                            {
-                                subAssembly.add((DoubleSupplier) () -> bifunc.bifunction.applyAsDouble(((DoubleSupplier) l).getAsDouble(), ((DoubleSupplier) r).getAsDouble()));
+                                consts = false;
                             }
 
-                            assembly.remove(assembly.size() - 1);
+                            args.add(obj);
                         }
+
+                        subAssembly.clear();
+
+                        if (consts)
+                        {
+                            Double[] array = args.stream().map(t -> ((Const) t).value).toArray(Double[]::new);
+                            subAssembly.add(new Const(f.apply(array)));
+                        }
+                        else
+                        {
+                            DoubleSupplier[] args1 = args.toArray(new DoubleSupplier[0]);
+                            Double[] array = new Double[args1.length];
+                            subAssembly.add((DoubleSupplier) () ->
+                            {
+                                for (int j = 0; j < array.length; ++j)
+                                {
+                                    array[j] = args1[j].getAsDouble();
+                                }
+
+                                return f.apply(array);
+                            });
+                        }
+
+                        assembly.remove(assembly.size() - 1);
                     }
 
                     if (neg)
@@ -225,7 +251,6 @@ public class Script
                     }
 
                     assembly.addAll(subAssembly);
-                    System.out.println(assembly);
                     i = end;
                 }
             }
@@ -241,26 +266,23 @@ public class Script
         for (int i = assembly.size() - 1; i >= 0; --i)
         {
             Object obj = assembly.get(i);
+            Instruction insn;
+            InsnFunction f;
 
-            if (obj instanceof Instruction)
+            if (obj instanceof Instruction && (insn = (Instruction) obj).isFunction() && (f = insn.function()).argNum == 1)
             {
-                Instruction insn = (Instruction) obj;
+                Object next = assembly.get(i + 1);
 
-                if (insn.function != null)
+                if (next instanceof Const)
                 {
-                    Object next = assembly.get(i + 1);
-
-                    if (next instanceof Const)
-                    {
-                        assembly.set(i, new Const(insn.function.apply(((Const) next).value)));
-                    }
-                    else
-                    {
-                        assembly.set(i, (DoubleSupplier) () -> insn.function.apply(((DoubleSupplier) next).getAsDouble()));
-                    }
-
-                    assembly.remove(i + 1);
+                    assembly.set(i, new Const(f.apply(((Const) next).value)));
                 }
+                else
+                {
+                    assembly.set(i, (DoubleSupplier) () -> f.apply(((DoubleSupplier) next).getAsDouble()));
+                }
+
+                assembly.remove(i + 1);
             }
         }
 
@@ -307,10 +329,10 @@ public class Script
             return Math.pow(l, r);
         case MOD:
             return l % r;
-        //        case AND:
-        //            return l == 1 && r == 1 ? 1 : 0;
-        //        case OR:
-        //            return l == 1 || r == 1 ? 1 : 0;
+        // case AND:
+        // return l == 1 && r == 1 ? 1 : 0;
+        // case OR:
+        // return l == 1 || r == 1 ? 1 : 0;
         default:
             return 0;
         }

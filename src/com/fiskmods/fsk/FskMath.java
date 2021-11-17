@@ -1,7 +1,5 @@
 package com.fiskmods.fsk;
 
-import com.fiskmods.fsk.insn.Instruction;
-
 public class FskMath
 {
     public static double interpolate(double a, double b, double progress)
@@ -11,7 +9,7 @@ public class FskMath
 
     public static double curveCrests(double d)
     {
-        return Instruction.SIN.function.apply(d * Math.PI / 2);
+        return Math.sin(d * Math.PI / 2);
     }
 
     public static double curve(double d)
@@ -22,5 +20,15 @@ public class FskMath
     public static double logn(double base, double d)
     {
         return Math.log(d) / Math.log(base);
+    }
+
+    public static double root(double d, double num)
+    {
+        return Math.pow(d, 1 / num);
+    }
+
+    public static double clamp(double d, double min, double max)
+    {
+        return Math.min(Math.max(d, min), max);
     }
 }

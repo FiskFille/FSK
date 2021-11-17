@@ -1,10 +1,17 @@
 package com.fiskmods.fsk.insn;
 
-import com.fiskmods.fsk.FskMath;
-
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleFunction;
-import java.util.function.ToDoubleBiFunction;
+import java.util.function.Predicate;
+
+import com.fiskmods.fsk.FskMath;
 
 public enum Instruction
 {
@@ -63,46 +70,73 @@ public enum Instruction
     CEIL(Math::ceil),
     CURVE(FskMath::curve),
 
-    // Bifunctions
     MIN(Math::min),
     MAX(Math::max),
     ATAN2(Math::atan2),
     HYPOT(Math::hypot),
-    LOGN(FskMath::logn);
+    LOGN(FskMath::logn),
+    ROOT(FskMath::root),
+
+    CLAMP(new InsnFunction(3, t -> FskMath.clamp(t[0], t[1], t[2])));
 
     public static final List<?>[] OP_ORDER = {Collections.singletonList(POW), Arrays.asList(MUL, DIV, MOD), Arrays.asList(ADD, SUB)};
     public static final Map<String, Instruction> FUNCTIONS;
     public static final List<String> FUNCTION_NAMES;
 
-    public final DoubleFunction<Double> function;
-    public final ToDoubleBiFunction<Double, Double> bifunction;
-    public final Double value;
+    public final Type type;
+    public final Object object;
 
-    Instruction(DoubleFunction<Double> func, ToDoubleBiFunction<Double, Double> bifunc, Double val)
+    Instruction()
     {
-        function = func;
-        bifunction = bifunc;
-        value = val;
+        type = Type.SYNTAX;
+        object = null;
+    }
+
+    Instruction(Number val)
+    {
+        type = Type.VALUE;
+        object = val;
+    }
+
+    Instruction(InsnFunction func)
+    {
+        type = Type.FUNCTION;
+        object = func;
     }
 
     Instruction(DoubleFunction<Double> func)
     {
-        this(func, null, null);
+        this(new InsnFunction(func));
     }
 
-    Instruction(ToDoubleBiFunction<Double, Double> bifunc)
+    Instruction(DoubleBinaryOperator func)
     {
-        this(null, bifunc, null);
+        this(new InsnFunction(func));
     }
 
-    Instruction(double val)
+    public boolean isValue()
     {
-        this(null, null, val);
+        return type == Type.VALUE;
     }
 
-    Instruction()
+    public boolean isFunction()
     {
-        this(null, null, null);
+        return type == Type.FUNCTION;
+    }
+
+    public boolean isFunction(Predicate<InsnFunction> p)
+    {
+        return isFunction() && p.test(function());
+    }
+
+    public double value()
+    {
+        return ((Number) object).doubleValue();
+    }
+
+    public InsnFunction function()
+    {
+        return (InsnFunction) object;
     }
 
     static
@@ -112,7 +146,7 @@ public enum Instruction
 
         for (Instruction insn : values())
         {
-            if (insn.function != null || insn.bifunction != null)
+            if (insn.isFunction())
             {
                 String s = insn.name().toLowerCase(Locale.ROOT);
                 FUNCTIONS.put(s, insn);
@@ -120,7 +154,13 @@ public enum Instruction
             }
         }
 
-        Comparator<String> c = (o1, o2) -> o1.startsWith(o2) || o2.startsWith(o1) ? o2.length() - o1.length() : o1.compareTo(o2);
-        FUNCTION_NAMES.sort(c);
+        FUNCTION_NAMES.sort((o1, o2) -> o1.startsWith(o2) || o2.startsWith(o1) ? o2.length() - o1.length() : o1.compareTo(o2));
+    }
+
+    private enum Type
+    {
+        SYNTAX,
+        VALUE,
+        FUNCTION
     }
 }
