@@ -31,4 +31,34 @@ public class FskMath
     {
         return Math.min(Math.max(d, min), max);
     }
+
+    public static double animate(double frame, double duration, double frameStart)
+    {
+        return frame >= frameStart && frame <= frameStart + duration ? (frame - frameStart) / duration : 0;
+    }
+
+    public static double animate(double frame, double duration, double frameStart, double fadeIn, double fadeOut)
+    {
+        fadeIn = clamp(fadeIn, 0, duration);
+        fadeOut = clamp(fadeOut, 0, duration - fadeIn);
+
+        if (frame >= frameStart && frame <= frameStart + duration)
+        {
+            double pos = frame - frameStart;
+
+            if (pos > fadeIn && frame < duration - fadeOut)
+            {
+                return 1;
+            }
+            else if (pos > fadeIn)
+            {
+                frame = frameStart + duration - pos;
+                fadeIn = fadeOut;
+            }
+
+            return animate(frame, duration, frameStart) * duration / fadeIn;
+        }
+
+        return 0;
+    }
 }

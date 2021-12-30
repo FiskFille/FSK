@@ -77,7 +77,10 @@ public enum Instruction
     LOGN(FskMath::logn),
     ROOT(FskMath::root),
 
-    CLAMP(new InsnFunction(3, t -> FskMath.clamp(t[0], t[1], t[2])));
+    CLAMP(new InsnFunction(3, t -> FskMath.clamp(t[0], t[1], t[2]))),
+    ANIMATE(new InsnFunction(3, t -> FskMath.animate(t[0], t[1], t[2]))),
+
+    ANIMATE2(new InsnFunction(5, t -> FskMath.animate(t[0], t[1], t[2], t[3], t[4])));
 
     public static final List<?>[] OP_ORDER = {Collections.singletonList(POW), Arrays.asList(MUL, DIV, MOD), Arrays.asList(ADD, SUB)};
     public static final Map<String, Instruction> FUNCTIONS;
