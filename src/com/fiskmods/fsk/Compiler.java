@@ -9,17 +9,13 @@ import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.fiskmods.fsk.insn.BracketInsnNode;
-import com.fiskmods.fsk.insn.ConstInsnNode;
-import com.fiskmods.fsk.insn.InsnFunction;
-import com.fiskmods.fsk.insn.InsnNode;
-import com.fiskmods.fsk.insn.Instruction;
-import com.fiskmods.fsk.insn.VarInsnNode;
+import com.fiskmods.fsk.insn.*;
 
 public class Compiler
 {
     private static final Pattern VAR_ = Pattern.compile("^(\\{(.+?)})");
     private static final Pattern CONST_ = Pattern.compile("^((?:\\d*\\.\\d+|\\d+)(?:'|)).*");
+    private static final Pattern STRING_ = Pattern.compile("^(\"(.+?)\")");
     private static final Pattern FUNC_;
 
     static
@@ -191,10 +187,12 @@ public class Compiler
 
             if ((i += compileVar(s)) - j != 0) continue;
             if ((i += compileConst(s)) - j != 0) continue;
+            if ((i += compileString(s)) - j != 0) continue;
             if ((i += compileFunc(s)) - j != 0) continue;
 
             // if ((i += compileKeyword(s, "false", ZERO)) - j != 0) continue;
             // if ((i += compileKeyword(s, "true", ONE)) - j != 0) continue;
+            if ((i += compileKeyword(s, "out", OUT)) - j != 0) continue;
             if ((i += compileKeyword(s, "pi", PI)) - j != 0) continue;
             if ((i += compileInterpTo(s)) - j != 0) continue;
 
@@ -231,12 +229,12 @@ public class Compiler
             }
             else if (c == ',')
             {
-                if (lineInsn.size() > 1 && !lineInsn.getLast().isValue(-1) || currFunc.isEmpty())
+                if (lineInsn.size() > 1 && !lineInsn.getLast().isValue(-1) || currFunc.isEmpty() && lineInsn.getFirst().instruction != OUT)
                 {
                     illegalToken();
                 }
 
-                if (--currFunc.peek().args <= 0)
+                if (!currFunc.isEmpty() && --currFunc.peek().args <= 0)
                 {
                     incorrectArgs();
                 }
@@ -355,6 +353,19 @@ public class Compiler
         });
     }
 
+    private int compileString(String s) throws CompilerException
+    {
+        return compileMatch(STRING_.matcher(s), m ->
+        {
+            if (lineInsn.isEmpty() || lineInsn.getLast().instruction != OUT)
+            {
+                illegalToken();
+            }
+
+            addInstruction(new StringInsnNode(m.group(2)));
+        });
+    }
+
     private int compileFunc(String s) throws CompilerException
     {
         return compileMatch(FUNC_.matcher(s), m ->
@@ -405,17 +416,34 @@ public class Compiler
 
     private void addInstruction(InsnNode node) throws CompilerException
     {
-        if (node.instruction != VAR && lineInsn.isEmpty())
+        if ((node.instruction != VAR && node.instruction != OUT) && lineInsn.isEmpty())
         {
-            unexpectedToken("variable");
+            unexpectedToken("variable or statement");
         }
-        else if (lineInsn.size() == 1 && node.instruction != EQ && node.instruction != AT && !node.isOperation())
+        else if (lineInsn.size() == 1)
         {
-            unexpectedToken("assignment");
+            if (lineInsn.getFirst().instruction == OUT)
+            {
+                if (node.instruction != STR)
+                {
+                    unexpectedToken("string");
+                }
+            }
+            else if (node.instruction != EQ && node.instruction != AT && !node.isOperation())
+            {
+                unexpectedToken("assignment");
+            }
         }
         else if (lineInsn.size() == 2)
         {
-            if (node.instruction != EQ && lineInsn.getLast().instruction != EQ && lineInsn.getLast().instruction != AT)
+            if (lineInsn.getFirst().instruction == OUT)
+            {
+                if (node.instruction != BST)
+                {
+                    unexpectedToken("'('");
+                }
+            }
+            else if (node.instruction != EQ && lineInsn.getLast().instruction != EQ && lineInsn.getLast().instruction != AT)
             {
                 unexpectedToken("assignment");
             }

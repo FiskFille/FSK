@@ -1,18 +1,15 @@
 package com.fiskmods.fsk;
 
-import static com.fiskmods.fsk.insn.Instruction.*;
+import com.fiskmods.fsk.insn.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
-import com.fiskmods.fsk.insn.BracketInsnNode;
-import com.fiskmods.fsk.insn.ConstInsnNode;
-import com.fiskmods.fsk.insn.InsnFunction;
-import com.fiskmods.fsk.insn.InsnNode;
-import com.fiskmods.fsk.insn.Instruction;
-import com.fiskmods.fsk.insn.VarInsnNode;
+import static com.fiskmods.fsk.insn.Instruction.*;
 
 public class Script
 {
@@ -23,6 +20,9 @@ public class Script
     private final Var[] vars;
 
     private Runnable assembledScript;
+    private BiConsumer<String, double[]> outputChannel = (t, u) ->
+    {
+    };
 
     public Script(List<InsnNode> instructions, List<String> lookup)
     {
@@ -64,6 +64,12 @@ public class Script
         return this;
     }
 
+    public Script addListener(BiConsumer<String, double[]> listener)
+    {
+        outputChannel = outputChannel.andThen(listener);
+        return this;
+    }
+
     public Script print()
     {
         for (int i = 0; i < vars.length; ++i)
@@ -98,7 +104,18 @@ public class Script
     private void assembleLine(List<InsnNode> instructions)
     {
         List<Object> assembly = new ArrayList<>();
-        assembleBody(assembly, instructions);
+
+        if (instructions.size() > 2 && instructions.get(0).instruction == OUT && instructions.get(1) instanceof StringInsnNode)
+        {
+            List<InsnNode> list = new ArrayList<>(instructions.subList(2, instructions.size()));
+            list.add(0, instructions.get(0));
+            assembleBody(assembly, list);
+            assembly.add(0, ((StringInsnNode) instructions.get(1)).value);
+        }
+        else
+        {
+            assembleBody(assembly, instructions);
+        }
 
         if (assembly.size() == 3 && assembly.get(1) == EQ)
         {
@@ -123,7 +140,17 @@ public class Script
                 l.accept(FskMath.interpolate(l.getAsDouble(), r.getAsDouble(), delta.getAsDouble()));
             };
         }
-
+        else if (assembly.size() == 2 && assembly.get(0) instanceof String && assembly.get(1) instanceof DoubleArray)
+        {
+            Runnable runnable = assembledScript;
+            String channel = (String) assembly.get(0);
+            DoubleArray array = (DoubleArray) assembly.get(1);
+            assembledScript = () ->
+            {
+                runnable.run();
+                outputChannel.accept(channel, array.get());
+            };
+        }
     }
 
     private void assembleBody(List<Object> assembly, List<InsnNode> insnList)
@@ -198,47 +225,30 @@ public class Script
                 if (end > -1)
                 {
                     List<Object> subAssembly = new ArrayList<>();
-                    InsnFunction f;
+                    InsnFunction f = null;
 
                     assembleBody(subAssembly, insnList.subList(i + 1, end));
 
-                    if (prev != null && prev.instruction.isFunction() && (f = prev.instruction.function()).argNum > 1 && subAssembly.size() > 1 && (subAssembly.size() & 1) == 1)
+                    if (prev != null && (prev.instruction.isFunction() && (f = prev.instruction.function()).argNum > 1 || prev.instruction == OUT) && subAssembly.size() > 1 && (subAssembly.size() & 1) == 1)
                     {
-                        List<Object> args = new ArrayList<>();
-                        boolean consts = true;
-
-                        for (int j = 0; j < subAssembly.size(); j += 2)
-                        {
-                            Object obj = subAssembly.get(j);
-
-                            if (!(obj instanceof Const))
-                            {
-                                consts = false;
-                            }
-
-                            args.add(obj);
-                        }
-
+                        DoubleArray array = compileArray(subAssembly);
                         subAssembly.clear();
 
-                        if (consts)
+                        if (f != null)
                         {
-                            Double[] array = args.stream().map(t -> ((Const) t).value).toArray(Double[]::new);
-                            subAssembly.add(new Const(f.apply(array)));
+                            if (array.isConstant())
+                            {
+                                subAssembly.add(new Const(f.apply(array.get())));
+                            }
+                            else
+                            {
+                                InsnFunction func = f;
+                                subAssembly.add((DoubleSupplier) () -> func.apply(array.get()));
+                            }
                         }
                         else
                         {
-                            DoubleSupplier[] args1 = args.toArray(new DoubleSupplier[0]);
-                            Double[] array = new Double[args1.length];
-                            subAssembly.add((DoubleSupplier) () ->
-                            {
-                                for (int j = 0; j < array.length; ++j)
-                                {
-                                    array[j] = args1[j].getAsDouble();
-                                }
-
-                                return f.apply(array);
-                            });
+                            subAssembly.add(array);
                         }
 
                         assembly.remove(assembly.size() - 1);
@@ -254,7 +264,7 @@ public class Script
                     i = end;
                 }
             }
-            else
+            else if (node.instruction != STR)
             {
                 assembly.add(node.instruction);
             }
@@ -313,6 +323,44 @@ public class Script
         }
     }
 
+    private DoubleArray compileArray(List<Object> subAssembly)
+    {
+        List<Object> args = new ArrayList<>();
+        boolean consts = true;
+
+        for (int j = 0; j < subAssembly.size(); j += 2)
+        {
+            Object obj = subAssembly.get(j);
+
+            if (!(obj instanceof Const))
+            {
+                consts = false;
+            }
+
+            args.add(obj);
+        }
+
+        if (consts)
+        {
+            double[] array = args.stream().mapToDouble(t -> ((Const) t).value).toArray();
+            return new DoubleArray(() -> array, true);
+        }
+        else
+        {
+            DoubleSupplier[] args1 = args.toArray(new DoubleSupplier[0]);
+            double[] array = new double[args1.length];
+            return new DoubleArray(() ->
+            {
+                for (int j = 0; j < array.length; ++j)
+                {
+                    array[j] = args1[j].getAsDouble();
+                }
+
+                return array;
+            }, false);
+        }
+    }
+
     private double operate(Instruction insn, double l, double r)
     {
         switch (insn)
@@ -357,6 +405,34 @@ public class Script
         public String toString()
         {
             return String.format("Const[%s]", value);
+        }
+    }
+
+    private static class DoubleArray
+    {
+        private final Supplier<double[]> value;
+        private final boolean constant;
+
+        private DoubleArray(Supplier<double[]> value, boolean constant)
+        {
+            this.value = value;
+            this.constant = constant;
+        }
+
+        public double[] get()
+        {
+            return value.get();
+        }
+
+        public boolean isConstant()
+        {
+            return constant;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("DoubleArray[%s]", value);
         }
     }
 }

@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import com.fiskmods.fsk.insn.BracketInsnNode;
 import com.fiskmods.fsk.insn.ConstInsnNode;
@@ -20,6 +21,7 @@ public class Main
     {
         String file = readFile(new File("test.fsk"));
         Script s = Compiler.compile(file);
+        s.addListener((t, u) -> System.out.println(t + ": " + Arrays.toString(u)));
 
 //        byte[] bytes = toBytes(s);
 //        writeFile(new File("output.txt"), bytes);

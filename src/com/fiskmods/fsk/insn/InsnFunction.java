@@ -6,10 +6,10 @@ import java.util.function.Function;
 
 public class InsnFunction
 {
-    private final Function<Double[], Double> function;
+    private final Function<double[], Double> function;
     public final int argNum;
 
-    public InsnFunction(int args, Function<Double[], Double> func)
+    public InsnFunction(int args, Function<double[], Double> func)
     {
         function = func;
         argNum = args;
@@ -25,7 +25,7 @@ public class InsnFunction
         this(2, t -> func.applyAsDouble(t[0], t[1]));
     }
 
-    public Double apply(Double... t)
+    public Double apply(double... t)
     {
         return function.apply(t);
     }

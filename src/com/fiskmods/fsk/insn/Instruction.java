@@ -23,10 +23,12 @@ public enum Instruction
     BST,
     BND,
     ARG,
+    OUT,
 
     // Values
     VAR,
     CST,
+    STR,
     NEG,
     DEG,
     ZRO(0),
