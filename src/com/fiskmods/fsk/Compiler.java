@@ -15,7 +15,7 @@ public class Compiler
 {
     private static final Pattern VAR_ = Pattern.compile("^(\\{(.+?)})");
     private static final Pattern CONST_ = Pattern.compile("^((?:\\d*\\.\\d+|\\d+)(?:'|)).*");
-    private static final Pattern STRING_ = Pattern.compile("^(\"(.+?)\")");
+    private static final Pattern STRING_ = Pattern.compile("^(\"(.*?)\")");
     private static final Pattern FUNC_;
 
     static
@@ -192,9 +192,9 @@ public class Compiler
 
             // if ((i += compileKeyword(s, "false", ZERO)) - j != 0) continue;
             // if ((i += compileKeyword(s, "true", ONE)) - j != 0) continue;
-            if ((i += compileKeyword(s, "out", OUT)) - j != 0) continue;
             if ((i += compileKeyword(s, "pi", PI)) - j != 0) continue;
             if ((i += compileInterpTo(s)) - j != 0) continue;
+            if ((i += compileOut(s)) - j != 0) continue;
 
             char c = line.charAt(i);
             scanner.scan(1);
@@ -396,6 +396,17 @@ public class Compiler
             }
 
             interp = 2;
+        });
+    }
+
+    private int compileOut(String s) throws CompilerException
+    {
+        return compileKeyword(s, "out", OUT, () ->
+        {
+            if (!lineInsn.isEmpty())
+            {
+                illegalToken();
+            }
         });
     }
 

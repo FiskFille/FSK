@@ -229,7 +229,7 @@ public class Script
 
                     assembleBody(subAssembly, insnList.subList(i + 1, end));
 
-                    if (prev != null && (prev.instruction.isFunction() && (f = prev.instruction.function()).argNum > 1 || prev.instruction == OUT) && subAssembly.size() > 1 && (subAssembly.size() & 1) == 1)
+                    if (prev != null && (prev.instruction == OUT || prev.instruction.isFunction() && (f = prev.instruction.function()).argNum > 1 && subAssembly.size() > 1) && (subAssembly.size() & 1) == 1)
                     {
                         DoubleArray array = compileArray(subAssembly);
                         subAssembly.clear();
