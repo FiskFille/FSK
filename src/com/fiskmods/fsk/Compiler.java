@@ -190,8 +190,15 @@ public class Compiler
             if ((i += compileString(s)) - j != 0) continue;
             if ((i += compileFunc(s)) - j != 0) continue;
 
-            // if ((i += compileKeyword(s, "false", ZERO)) - j != 0) continue;
-            // if ((i += compileKeyword(s, "true", ONE)) - j != 0) continue;
+            if ((i += compileKeyword(s, "false", ZRO)) - j != 0) continue;
+            if ((i += compileKeyword(s, "true", ONE)) - j != 0) continue;
+            if ((i += compileKeyword(s, "&&", AND)) - j != 0) continue;
+            if ((i += compileKeyword(s, "||", OR)) - j != 0) continue;
+            if ((i += compileKeyword(s, "==", EQS)) - j != 0) continue;
+            if ((i += compileKeyword(s, "!=", NEQ)) - j != 0) continue;
+            if ((i += compileKeyword(s, "<=", LEQ)) - j != 0) continue;
+            if ((i += compileKeyword(s, ">=", GEQ)) - j != 0) continue;
+
             if ((i += compileKeyword(s, "pi", PI)) - j != 0) continue;
             if ((i += compileInterpTo(s)) - j != 0) continue;
             if ((i += compileOut(s)) - j != 0) continue;
@@ -201,7 +208,7 @@ public class Compiler
 
             if (c == '=')
             {
-                if (lineInsn.size() > 1 && !lineInsn.get(1).isOperation())
+                if (lineInsn.size() > 1 && !lineInsn.get(1).instruction.isOperator())
                 {
                     illegalToken();
                 }
@@ -227,6 +234,17 @@ public class Compiler
 
                 addInstruction(DEG);
             }
+            else if (c == '!')
+            {
+                Instruction last;
+
+                if (lineInsn.size() > 1 && !(last = lineInsn.getLast().instruction).isOperator() && last != NOT && last != EQ && last != TO)
+                {
+                    illegalToken();
+                }
+
+                addInstruction(NOT);
+            }
             else if (c == ',')
             {
                 if (lineInsn.size() > 1 && !lineInsn.getLast().isValue(-1) || currFunc.isEmpty() && lineInsn.getFirst().instruction != OUT)
@@ -248,6 +266,8 @@ public class Compiler
             else if (c == '/') addInstruction(DIV);
             else if (c == '^') addInstruction(POW);
             else if (c == '%') addInstruction(MOD);
+            else if (c == '<') addInstruction(LT);
+            else if (c == '>') addInstruction(GT);
             else if (c != ' ' && c != '\t' && c != '\r')
             {
                 for (i = 0; i < s.length(); ++i)
@@ -440,7 +460,7 @@ public class Compiler
                     unexpectedToken("string");
                 }
             }
-            else if (node.instruction != EQ && node.instruction != AT && !node.isOperation())
+            else if (node.instruction != EQ && node.instruction != AT && !node.instruction.isOperator())
             {
                 unexpectedToken("assignment");
             }
@@ -472,7 +492,7 @@ public class Compiler
 
             unexpectedToken("'('");
         }
-        else if (node.instruction != SUB && node.isOperation() && !lineInsn.getLast().isValue(-1))
+        else if (node.instruction != SUB && node.instruction.isOperator() && !lineInsn.getLast().isValue(-1))
         {
             unexpectedToken("value");
         }

@@ -1,17 +1,11 @@
 package com.fiskmods.fsk.insn;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import com.fiskmods.fsk.FskMath;
+
+import java.util.*;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleFunction;
 import java.util.function.Predicate;
-
-import com.fiskmods.fsk.FskMath;
 
 public enum Instruction
 {
@@ -37,17 +31,23 @@ public enum Instruction
     E(Math.E),
 
     // Operators
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-    POW,
-    MOD,
+    ADD(Double::sum, true),
+    SUB((l, r) -> l - r, true),
+    MUL((l, r) -> l * r, true),
+    DIV((l, r) -> l / r, true),
+    POW(Math::pow, true),
+    MOD((l, r) -> l % r, true),
 
     // Logical operators
     NOT,
-    AND,
-    OR,
+    AND((l, r) -> l == 1 && r == 1 ? 1 : 0, true),
+    OR((l, r) -> l == 1 || r == 1 ? 1 : 0, true),
+    EQS((l, r) -> l == r ? 1 : 0, true),
+    NEQ((l, r) -> l != r ? 1 : 0, true),
+    LT((l, r) -> l < r ? 1 : 0, true),
+    GT((l, r) -> l > r ? 1 : 0, true),
+    LEQ((l, r) -> l <= r ? 1 : 0, true),
+    GEQ((l, r) -> l >= r ? 1 : 0, true),
 
     // Functions
     SIN(Math::sin),
@@ -79,12 +79,13 @@ public enum Instruction
     LOGN(FskMath::logn),
     ROOT(FskMath::root),
 
+    IF(new InsnFunction(3, t -> FskMath.ifElse(t[0], t[1], t[2]))),
     CLAMP(new InsnFunction(3, t -> FskMath.clamp(t[0], t[1], t[2]))),
     ANIMATE(new InsnFunction(3, t -> FskMath.animate(t[0], t[1], t[2]))),
 
     ANIMATE2(new InsnFunction(5, t -> FskMath.animate(t[0], t[1], t[2], t[3], t[4])));
 
-    public static final List<?>[] OP_ORDER = {Collections.singletonList(POW), Arrays.asList(MUL, DIV, MOD), Arrays.asList(ADD, SUB)};
+    public static final List<?>[] OP_ORDER = {Arrays.asList(POW, NOT), Arrays.asList(MUL, DIV, MOD), Arrays.asList(ADD, SUB), Arrays.asList(AND, EQS, NEQ, LT, GT, LEQ, GEQ), Collections.singletonList(OR)};
     public static final Map<String, Instruction> FUNCTIONS;
     public static final List<String> FUNCTION_NAMES;
 
@@ -101,6 +102,12 @@ public enum Instruction
     {
         type = Type.VALUE;
         object = val;
+    }
+
+    Instruction(DoubleBinaryOperator operation, boolean isOperator)
+    {
+        type = Type.OPERATOR;
+        object = operation;
     }
 
     Instruction(InsnFunction func)
@@ -124,6 +131,11 @@ public enum Instruction
         return type == Type.VALUE;
     }
 
+    public boolean isOperator()
+    {
+        return type == Type.OPERATOR;
+    }
+
     public boolean isFunction()
     {
         return type == Type.FUNCTION;
@@ -137,6 +149,11 @@ public enum Instruction
     public double value()
     {
         return ((Number) object).doubleValue();
+    }
+
+    public DoubleBinaryOperator operator()
+    {
+        return (DoubleBinaryOperator) object;
     }
 
     public InsnFunction function()
@@ -166,6 +183,7 @@ public enum Instruction
     {
         SYNTAX,
         VALUE,
+        OPERATOR,
         FUNCTION
     }
 }

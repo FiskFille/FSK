@@ -17,6 +17,11 @@ public class FskMath
         return (curveCrests(d * 2 - 1) + 1) / 2;
     }
 
+    public static double ifElse(double condition, double a, double b)
+    {
+        return condition == 1 ? a : b;
+    }
+
     public static double logn(double base, double d)
     {
         return Math.log(d) / Math.log(base);

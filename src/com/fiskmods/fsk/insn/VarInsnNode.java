@@ -17,12 +17,6 @@ public class VarInsnNode extends InsnNode
     }
 
     @Override
-    public boolean isOperation()
-    {
-        return false;
-    }
-
-    @Override
     public String toString()
     {
         return String.format("%s[%s]", instruction, var);

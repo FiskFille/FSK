@@ -1,6 +1,7 @@
 package com.fiskmods.fsk.insn;
 
-import static com.fiskmods.fsk.insn.Instruction.*;
+import static com.fiskmods.fsk.insn.Instruction.DEG;
+import static com.fiskmods.fsk.insn.Instruction.NOT;
 
 public class InsnNode
 {
@@ -13,12 +14,7 @@ public class InsnNode
 
     public boolean isValue(int dir)
     {
-        return instruction.isValue() || dir > 0 && instruction.isFunction() || dir < 0 && instruction == DEG;
-    }
-
-    public boolean isOperation()
-    {
-        return instruction == ADD || instruction == SUB || instruction == MUL || instruction == DIV || instruction == POW || instruction == MOD;
+        return instruction.isValue() || dir > 0 && (instruction.isFunction() || instruction == NOT) || dir < 0 && instruction == DEG;
     }
 
     @Override

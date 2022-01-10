@@ -4,10 +4,7 @@ import com.fiskmods.fsk.insn.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.DoubleConsumer;
-import java.util.function.DoubleSupplier;
-import java.util.function.Supplier;
+import java.util.function.*;
 
 import static com.fiskmods.fsk.insn.Instruction.*;
 
@@ -304,19 +301,36 @@ public class Script
 
                 if (list.contains(obj))
                 {
-                    Instruction op = (Instruction) obj;
-                    Object l = assembly.get(i - 1);
                     Object r = assembly.get(i + 1);
+
+                    if (obj == NOT)
+                    {
+                        assembly.remove(i);
+
+                        if (r instanceof Const)
+                        {
+                            assembly.set(i, new Const(((Const) r).value == 1 ? 0 : 1));
+                        }
+                        else
+                        {
+                            assembly.set(i, (DoubleSupplier) () -> ((DoubleSupplier) r).getAsDouble() == 1 ? 0 : 1);
+                        }
+
+                        continue;
+                    }
+
+                    DoubleBinaryOperator op = ((Instruction) obj).operator();
+                    Object l = assembly.get(i - 1);
                     assembly.remove(i - 1);
                     assembly.remove(i);
 
                     if (l instanceof Const && r instanceof Const)
                     {
-                        assembly.set(--i, new Const(operate(op, ((Const) l).value, ((Const) r).value)));
+                        assembly.set(--i, new Const(op.applyAsDouble(((Const) l).value, ((Const) r).value)));
                     }
                     else
                     {
-                        assembly.set(--i, (DoubleSupplier) () -> operate(op, ((DoubleSupplier) l).getAsDouble(), ((DoubleSupplier) r).getAsDouble()));
+                        assembly.set(--i, (DoubleSupplier) () -> op.applyAsDouble(((DoubleSupplier) l).getAsDouble(), ((DoubleSupplier) r).getAsDouble()));
                     }
                 }
             }
@@ -358,31 +372,6 @@ public class Script
 
                 return array;
             }, false);
-        }
-    }
-
-    private double operate(Instruction insn, double l, double r)
-    {
-        switch (insn)
-        {
-        case ADD:
-            return l + r;
-        case SUB:
-            return l - r;
-        case MUL:
-            return l * r;
-        case DIV:
-            return l / r;
-        case POW:
-            return Math.pow(l, r);
-        case MOD:
-            return l % r;
-        // case AND:
-        // return l == 1 && r == 1 ? 1 : 0;
-        // case OR:
-        // return l == 1 || r == 1 ? 1 : 0;
-        default:
-            return 0;
         }
     }
 

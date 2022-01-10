@@ -1,13 +1,13 @@
 package com.fiskmods.fsk;
 
-import static com.fiskmods.fsk.insn.Instruction.*;
+import com.fiskmods.fsk.insn.BracketInsnNode;
+import com.fiskmods.fsk.insn.ConstInsnNode;
+import com.fiskmods.fsk.insn.InsnNode;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fiskmods.fsk.insn.BracketInsnNode;
-import com.fiskmods.fsk.insn.ConstInsnNode;
-import com.fiskmods.fsk.insn.InsnNode;
+import static com.fiskmods.fsk.insn.Instruction.*;
 
 public class Reconstructor
 {
@@ -38,7 +38,7 @@ public class Reconstructor
             {
                 InsnNode next = line.get(i + 1);
 
-                if (next.instruction == EQ && node.isOperation())
+                if (next.instruction == EQ && node.instruction.isOperator())
                 {
                     List<InsnNode> bracket;
                     line.remove(i);
@@ -55,7 +55,7 @@ public class Reconstructor
                     while (--j > -1 && line.get(j).instruction == SUB);
                     node = line.get(j);
 
-                    if (node.isOperation() || node.isValue(-1))
+                    if (node.instruction.isOperator() || node.isValue(-1))
                     {
                         ++j;
                     }
