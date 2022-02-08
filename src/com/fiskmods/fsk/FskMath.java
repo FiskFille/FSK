@@ -66,4 +66,21 @@ public class FskMath
 
         return 0;
     }
+
+    public static double wrapAngleTo180(double value)
+    {
+        value %= 360;
+
+        if (value >= 180)
+        {
+            value -= 360;
+        }
+
+        if (value < -180)
+        {
+            value += 360;
+        }
+
+        return value;
+    }
 }

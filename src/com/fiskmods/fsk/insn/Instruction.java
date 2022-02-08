@@ -71,6 +71,7 @@ public enum Instruction
     FLOOR(Math::floor),
     CEIL(Math::ceil),
     CURVE(FskMath::curve),
+    WRAPTO180(FskMath::wrapAngleTo180),
 
     MIN(Math::min),
     MAX(Math::max),
