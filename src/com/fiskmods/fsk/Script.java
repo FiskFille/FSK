@@ -172,6 +172,11 @@ public class Script
                 prev = node;
                 continue;
             }
+            else if (node.instruction.isFunction())
+            {
+                assembly.add(node.instruction);
+                assembly.add(neg);
+            }
             else if (node.instruction == DEG)
             {
                 assembly.add(MUL);
@@ -278,11 +283,17 @@ public class Script
 
             if (obj instanceof Instruction && (insn = (Instruction) obj).isFunction() && (f = insn.function()).argNum == 1)
             {
+                neg = (Boolean) assembly.get(i + 1);
+                assembly.remove(i + 1);
                 Object next = assembly.get(i + 1);
 
                 if (next instanceof Const)
                 {
-                    assembly.set(i, new Const(f.apply(((Const) next).value)));
+                    assembly.set(i, new Const((neg ? -1 : 1) * f.apply(((Const) next).value)));
+                }
+                else if (neg)
+                {
+                    assembly.set(i, (DoubleSupplier) () -> -f.apply(((DoubleSupplier) next).getAsDouble()));
                 }
                 else
                 {
