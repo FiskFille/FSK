@@ -40,11 +40,11 @@ public class Reconstructor
 
                 if (next.instruction == EQ && node.instruction.isOperator())
                 {
-                    List<InsnNode> bracket;
                     line.remove(i);
                     line.add(i + 1, new BracketInsnNode(BST, -1));
                     line.add(i + 1, node);
-                    line.addAll(i + 1, bracket = new ArrayList<>(line.subList(0, i)));
+                    List<InsnNode> bracket = new ArrayList<>(line.subList(0, i));
+                    line.addAll(i + 1, bracket);
                     line.add(line.size() - 1, new BracketInsnNode(BND, -1));
                     i += 1 + bracket.size();
                 }

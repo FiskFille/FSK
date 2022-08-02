@@ -11,19 +11,15 @@ import static com.fiskmods.fsk.insn.Instruction.*;
 public class Script
 {
     final List<String> lookup;
-    final List<InsnNode> instructions;
 
     private final String[] varNames;
-    private final Var[] vars;
+    public final Var[] vars;
 
-    private Runnable assembledScript;
-    private BiConsumer<String, double[]> outputChannel = (t, u) ->
-    {
-    };
+    private Runnable assembledScript = () -> { };
+    private BiConsumer<String, double[]> outputChannel = (t, u) -> { };
 
     public Script(List<InsnNode> instructions, List<String> lookup)
     {
-        this.instructions = instructions;
         this.lookup = lookup;
 
         varNames = lookup.toArray(new String[0]);
@@ -34,12 +30,18 @@ public class Script
             vars[i] = new Var(varNames[i], i, 0);
         }
 
-        assembleLine();
-    }
+        List<InsnNode> list = instructions;
 
-    public Var[] getVars()
-    {
-        return vars;
+        for (int i = 0; i < list.size(); ++i)
+        {
+            if (list.get(i).instruction == NL)
+            {
+                List<InsnNode> line = list.subList(0, i);
+                list = list.subList(i + 1, list.size());
+                assembleLine(line);
+                i = 0;
+            }
+        }
     }
 
     public Var assign(String s, double defVal)
@@ -77,25 +79,14 @@ public class Script
         return this;
     }
 
-    private Script assembleLine()
+    private void append(Runnable r)
     {
-        List<InsnNode> list = instructions;
+        Runnable r0 = assembledScript;
         assembledScript = () ->
         {
+            r0.run();
+            r.run();
         };
-
-        for (int i = 0; i < list.size(); ++i)
-        {
-            if (list.get(i).instruction == NL)
-            {
-                List<InsnNode> line = list.subList(0, i);
-                list = list.subList(i + 1, list.size());
-                assembleLine(line);
-                i = 0;
-            }
-        }
-
-        return this;
     }
 
     private void assembleLine(List<InsnNode> instructions)
@@ -118,35 +109,20 @@ public class Script
         {
             DoubleConsumer l = (DoubleConsumer) assembly.get(0);
             DoubleSupplier r = (DoubleSupplier) assembly.get(2);
-            Runnable runnable = assembledScript;
-            assembledScript = () ->
-            {
-                runnable.run();
-                l.accept(r.getAsDouble());
-            };
+            append(() -> l.accept(r.getAsDouble()));
         }
         else if (assembly.size() == 5 && assembly.get(1) == AT && assembly.get(3) == TO)
         {
             Var l = (Var) assembly.get(0);
             DoubleSupplier r = (DoubleSupplier) assembly.get(4);
             DoubleSupplier delta = (DoubleSupplier) assembly.get(2);
-            Runnable runnable = assembledScript;
-            assembledScript = () ->
-            {
-                runnable.run();
-                l.accept(FskMath.interpolate(l.getAsDouble(), r.getAsDouble(), delta.getAsDouble()));
-            };
+            append(() -> l.accept(FskMath.interpolate(l.getAsDouble(), r.getAsDouble(), delta.getAsDouble())));
         }
         else if (assembly.size() == 2 && assembly.get(0) instanceof String && assembly.get(1) instanceof DoubleArray)
         {
-            Runnable runnable = assembledScript;
             String channel = (String) assembly.get(0);
             DoubleArray array = (DoubleArray) assembly.get(1);
-            assembledScript = () ->
-            {
-                runnable.run();
-                outputChannel.accept(channel, array.get());
-            };
+            append(() -> outputChannel.accept(channel, array.get()));
         }
     }
 

@@ -86,7 +86,7 @@ public enum Instruction
 
     ANIMATE2(new InsnFunction(5, t -> FskMath.animate(t[0], t[1], t[2], t[3], t[4])));
 
-    public static final List<?>[] OP_ORDER = {Arrays.asList(POW, NOT), Arrays.asList(MUL, DIV, MOD), Arrays.asList(ADD, SUB), Arrays.asList(AND, EQS, NEQ, LT, GT, LEQ, GEQ), Collections.singletonList(OR)};
+    public static final List<?>[] OP_ORDER = {Arrays.asList(POW, NOT), Arrays.asList(MUL, DIV, MOD), Arrays.asList(ADD, SUB), Arrays.asList(EQS, NEQ, LT, GT, LEQ, GEQ), Collections.singletonList(AND), Collections.singletonList(OR)};
     public static final Map<String, Instruction> FUNCTIONS;
     public static final List<String> FUNCTION_NAMES;
 
