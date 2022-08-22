@@ -56,7 +56,7 @@ public enum Instruction
     ASIN(Math::asin),
     ACOS(Math::acos),
     ATAN(Math::atan),
-    ABS(Math::abs),
+    ABS(t -> Math.abs(t)),
     LOG(Math::log),
     LOG10(Math::log10),
     LOG1P(Math::log1p),

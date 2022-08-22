@@ -7,5 +7,4 @@ run/
 *.iml
 *.xml
 
-output.txt
-test.fsk
+test_internal.fsk
