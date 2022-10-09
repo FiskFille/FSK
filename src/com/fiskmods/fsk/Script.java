@@ -111,12 +111,20 @@ public class Script
             DoubleSupplier r = (DoubleSupplier) assembly.get(2);
             append(() -> l.accept(r.getAsDouble()));
         }
-        else if (assembly.size() == 5 && assembly.get(1) == AT && assembly.get(3) == TO)
+        else if (assembly.size() == 5 && assembly.get(1) == AT && (assembly.get(3) == TO || assembly.get(3) == RTO))
         {
             Var l = (Var) assembly.get(0);
             DoubleSupplier r = (DoubleSupplier) assembly.get(4);
             DoubleSupplier delta = (DoubleSupplier) assembly.get(2);
-            append(() -> l.accept(FskMath.interpolate(l.getAsDouble(), r.getAsDouble(), delta.getAsDouble())));
+
+            if (assembly.get(3) == RTO)
+            {
+                append(() -> l.accept(FskMath.interpolateRot(l.getAsDouble(), r.getAsDouble(), delta.getAsDouble())));
+            }
+            else
+            {
+                append(() -> l.accept(FskMath.interpolate(l.getAsDouble(), r.getAsDouble(), delta.getAsDouble())));
+            }
         }
         else if (assembly.size() == 2 && assembly.get(0) instanceof String && assembly.get(1) instanceof DoubleArray)
         {

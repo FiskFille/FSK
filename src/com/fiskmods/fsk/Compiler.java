@@ -1,6 +1,6 @@
 package com.fiskmods.fsk;
 
-import static com.fiskmods.fsk.insn.Instruction.*;
+import com.fiskmods.fsk.insn.*;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -9,7 +9,7 @@ import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.fiskmods.fsk.insn.*;
+import static com.fiskmods.fsk.insn.Instruction.*;
 
 public class Compiler
 {
@@ -200,7 +200,8 @@ public class Compiler
             if ((i += compileKeyword(s, ">=", GEQ)) - j != 0) continue;
 
             if ((i += compileKeyword(s, "pi", PI)) - j != 0) continue;
-            if ((i += compileInterpTo(s)) - j != 0) continue;
+            if ((i += compileInterpTo(s, "->", TO)) - j != 0) continue;
+            if ((i += compileInterpTo(s, "-'>", RTO)) - j != 0) continue;
             if ((i += compileOut(s)) - j != 0) continue;
 
             char c = line.charAt(i);
@@ -238,7 +239,7 @@ public class Compiler
             {
                 Instruction last;
 
-                if (lineInsn.size() > 1 && !(last = lineInsn.getLast().instruction).isOperator() && last != NOT && last != EQ && last != TO)
+                if (lineInsn.size() > 1 && !(last = lineInsn.getLast().instruction).isOperator() && last != NOT && last != EQ && last != TO && last != RTO)
                 {
                     illegalToken();
                 }
@@ -402,9 +403,9 @@ public class Compiler
         });
     }
 
-    private int compileInterpTo(String s) throws CompilerException
+    private int compileInterpTo(String s, String keyword, Instruction insn) throws CompilerException
     {
-        return compileKeyword(s, "->", TO, () ->
+        return compileKeyword(s, keyword, insn, () ->
         {
             if (interp != 1 || scanner.script.substring(0, scanner.index()).chars().reduce(0, (res, t) -> res + (t == '(' ? 1 : t == ')' ? -1 : 0)) > 0)
             {

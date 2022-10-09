@@ -13,6 +13,7 @@ public enum Instruction
     EQ,
     AT,
     TO,
+    RTO,
     NL,
     BST,
     BND,

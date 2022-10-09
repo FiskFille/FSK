@@ -7,6 +7,19 @@ public class FskMath
         return a + (b - a) * progress;
     }
 
+    public static double interpolateRot(double a, double b, double progress)
+    {
+        double d;
+        for (d = b - a; d < -Math.PI; d += 2 * Math.PI);
+
+        while (d >= Math.PI)
+        {
+            d -= 2 * Math.PI;
+        }
+
+        return a + progress * d;
+    }
+
     public static double curveCrests(double d)
     {
         return Math.sin(d * Math.PI / 2);
