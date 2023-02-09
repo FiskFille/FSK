@@ -52,7 +52,7 @@ public class FskMath
 
     public static double animate(double frame, double duration, double frameStart)
     {
-        return frame >= frameStart && frame <= frameStart + duration ? (frame - frameStart) / duration : 0;
+        return frame > frameStart && frame <= frameStart + duration ? (frame - frameStart) / duration : 0;
     }
 
     public static double animate(double frame, double duration, double frameStart, double fadeIn, double fadeOut)
@@ -60,21 +60,20 @@ public class FskMath
         fadeIn = clamp(fadeIn, 0, duration);
         fadeOut = clamp(fadeOut, 0, duration - fadeIn);
 
-        if (frame >= frameStart && frame <= frameStart + duration)
+        if (frame >= frameStart && frame < frameStart + duration)
         {
             double pos = frame - frameStart;
 
-            if (pos > fadeIn && frame < duration - fadeOut)
+            if (pos < fadeIn)
             {
-                return 1;
+                return animate(pos, fadeIn, 0);
             }
-            else if (pos > fadeIn)
+            else if (pos >= duration - fadeOut)
             {
-                frame = frameStart + duration - pos;
-                fadeIn = fadeOut;
+                return 1 - animate(pos, fadeOut, duration - fadeOut);
             }
 
-            return animate(frame, duration, frameStart) * duration / fadeIn;
+            return 1;
         }
 
         return 0;
