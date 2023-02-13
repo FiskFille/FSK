@@ -1,0 +1,46 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+group 'com.fiskmods'
+version project.version
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = group
+            artifactId = rootProject.name
+            version = version
+            from components.java
+
+            pom {
+                name = 'FSK'
+                description = 'A lightweight library for compiling and running scripts' +
+                        'written in the FSK scripting language.'
+            }
+        }
+    }
+    repositories {
+        maven {
+            credentials {
+                username = "$spaceUsername"
+                password = "$spacePassword"
+            }
+            url = "https://maven.pkg.jetbrains.space/fiskfille/p/main/fsk"
+        }
+    }
+}
+
+test {
+    useJUnitPlatform()
+}

@@ -7,4 +7,9 @@ run/
 *.iml
 *.xml
 
+# Gradle
+.gradle/
+build/
+gradle.properties
+
 test_internal.fsk
