@@ -85,6 +85,8 @@ public enum Instruction
     IF(new InsnFunction(3, t -> FskMath.ifElse(t[0], t[1], t[2]))),
     CLAMP(new InsnFunction(3, t -> FskMath.clamp(t[0], t[1], t[2]))),
     ANIMATE(new InsnFunction(3, t -> FskMath.animate(t[0], t[1], t[2]))),
+    LERP(new InsnFunction(3, t -> FskMath.interpolate(t[1], t[2], t[0]))),
+    ROTLERP(new InsnFunction(3, t -> FskMath.interpolateRot(t[1], t[2], t[0]))),
 
     ANIMATE2(new InsnFunction(5, t -> FskMath.animate(t[0], t[1], t[2], t[3], t[4])));
 
@@ -107,7 +109,7 @@ public enum Instruction
         object = val;
     }
 
-    Instruction(DoubleBinaryOperator operation, boolean isOperator)
+    Instruction(DoubleBinaryOperator operation, boolean ignored)
     {
         type = Type.OPERATOR;
         object = operation;
