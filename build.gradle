@@ -25,7 +25,7 @@ publishing {
 
             pom {
                 name = 'FSK'
-                description = 'A lightweight library for compiling and running scripts' +
+                description = 'A lightweight library for compiling and running scripts ' +
                         'written in the FSK scripting language.'
             }
         }
@@ -36,7 +36,7 @@ publishing {
                 username = "$spaceUsername"
                 password = "$spacePassword"
             }
-            url = "https://maven.pkg.jetbrains.space/fiskfille/p/main/fsk"
+            url = "https://maven.pkg.jetbrains.space/fiskfille/p/main/fiskmods"
         }
     }
 }
