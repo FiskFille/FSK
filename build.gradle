@@ -33,10 +33,10 @@ publishing {
     repositories {
         maven {
             credentials {
-                username = "$spaceUsername"
-                password = "$spacePassword"
+                username = "$repsyUsername"
+                password = "$repsyPassword"
             }
-            url = "https://maven.pkg.jetbrains.space/fiskfille/p/main/fiskmods"
+            url = "https://repsy.io/mvn/fiskfille/fiskmods/"
         }
     }
 }
